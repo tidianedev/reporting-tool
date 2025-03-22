@@ -1,6 +1,6 @@
 {
   "name": "reporting-tool",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Tool di Reporting Commissioni Mensile",
   "main": "main.js",
   "scripts": {
