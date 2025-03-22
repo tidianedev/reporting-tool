@@ -11,7 +11,7 @@
     "build-linux": "electron-builder --linux",
     "publish": "electron-builder --publish always"
   },
-  "author": "Serge Guea",
+  "author": "TidianeDev",
   "license": "ISC",
   "build": {
     "appId": "eu.tasgroup.reportingtool",

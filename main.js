@@ -383,7 +383,7 @@ function createAppMenu() {
             dialog.showMessageBox(mainWindow, {
               title: 'Informazioni',
               message: 'Tool di Reporting Commissioni Mensile',
-              detail: `Versione: ${app.getVersion()}\n© 2025 - Tool Reporting Commissioni | Powered by Serge Guea`,
+              detail: `Versione: ${app.getVersion()}\n© 2025 - Tool Reporting Commissioni | Powered by TidianeDev`,
               type: 'info',
               buttons: ['Chiudi'],
               defaultId: 0

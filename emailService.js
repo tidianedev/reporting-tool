@@ -222,7 +222,7 @@ class EmailService {
         <p>Il report è stato generato automaticamente dal Tool di Reporting Commissioni Mensile.</p>
         <hr style="border: 1px solid #eee; margin: 20px 0;">
         <p style="font-size: 12px; color: #666;">
-          © 2025 - Tool Reporting Commissioni | Powered by <b>Serge Guea</b>
+          © 2025 - Tool Reporting Commissioni | Powered by <b>TdianeDev</b>
         </p>
       </div>
     `;
@@ -331,7 +331,7 @@ class EmailService {
           <hr style="border: 1px solid #eee; margin: 20px 0;">
           <p style="font-size: 12px; color: #666;">
             Questo report è stato generato automaticamente dal Tool di Reporting Commissioni Mensile.<br>
-            © 2025 - Tool Reporting Commissioni | Powered by <b>Serge Guea</b>
+            © 2025 - Tool Reporting Commissioni | Powered by <b>TdianeDev</b>
           </p>
         </div>
       `;
