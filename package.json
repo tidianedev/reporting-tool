@@ -47,7 +47,7 @@
     },
     "publish": {
       "provider": "generic",
-      "url": "https://github.com/SERGE3-g/reporting-tool/releases/"
+      "url": "https://github.com/tidianedev/reporting-tool/releases/"
     }
   },
   "dependencies": {

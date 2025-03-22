@@ -368,7 +368,7 @@ function createAppMenu() {
         {
           label: 'Guida utente',
           click: async () => {
-            await shell.openExternal('https://github.com/SERGE3-g/reporting-tool/releases/tag/v1.1.0');
+            await shell.openExternal('https://github.com/tidianedev/reporting-tool/releases/');
           }
         },
         {
