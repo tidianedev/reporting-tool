@@ -72,7 +72,7 @@ Un'applicazione desktop per l'estrazione e l'analisi di dati da file JSON, con f
 
 ## Informazioni di supporto
 
-Per assistenza o per segnalare problemi, contattare il supporto tecnico all'indirizzo [email@esempio.com].
+Per assistenza o per segnalare problemi, contattare il supporto tecnico all'indirizzo gueaserge2@gmail.com.
 
 ## Note legali
 
