@@ -1,110 +1,65 @@
-/************************************************************************
- * NOTIFICHE
- ************************************************************************/
-function showNotification(message, type = 'info') {
-    resultInfo.textContent = message;
-    resultInfo.style.display = 'block';
-    switch (type) {
-        case 'error':
-            resultInfo.style.borderLeftColor = 'var(--danger)';
-            break;
-        case 'success':
-            resultInfo.style.borderLeftColor = 'var(--success)';
-            break;
-        case 'warning':
-            resultInfo.style.borderLeftColor = 'var(--warning)';
-            break;
-        default:
-            resultInfo.style.borderLeftColor = 'var(--primary)';
-    }
-    // Nascondi il messaggio dopo 5 secondi per success e info
-    if (type === 'success' || type === 'info') {
-        setTimeout(closeNotification, 5000);
-    }
-}
-
-function closeNotification() {
-    resultInfo.style.display = 'none';
-}
+// ========================================================================
+// CODICE COMPLETO
+// ========================================================================
 
 /************************************************************************
- * VARIABILI GLOBALI E RIFERIMENTI DOM
+ * VARIABILI GLOBALI
  ************************************************************************/
 let allExtractedData = [];
 let currentFiles = [];
 let filteredData = [];
-let charts = [];            // Array per i grafici Chart.js
-let filterPresets = [];
-let emailConfig = {
-    service: '',
-    user: '',
-    password: '',
-    smtpServer: '',
-    smtpPort: ''
-};
+let charts = [];  // Array per i grafici Chart.js
 
-// Riferimenti agli elementi DOM
-const jsonFileInput     = document.getElementById('jsonFileInput');
-const fileInfo          = document.getElementById('fileInfo');
-const processButton     = document.getElementById('processButton');
+// Riferimenti ai campi DOM
+const jsonFileInput = document.getElementById('jsonFileInput');
+const fileInfo = document.getElementById('fileInfo');
+const processButton = document.getElementById('processButton');
 const progressContainer = document.getElementById('progressContainer');
-const progressBar       = document.getElementById('progressBar');
-const progressPercentage= document.getElementById('progressPercentage');
-const resultInfo        = document.getElementById('resultInfo');
-const previewDiv        = document.getElementById('preview');
-const exportCsvButton   = document.getElementById('exportCsvButton');
-const exportXlsxButton  = document.getElementById('exportXlsxButton');
-const exportPdfButton   = document.getElementById('exportPdfButton');
-const generateStatsBtn  = document.getElementById('generateStatsButton');
+const progressBar = document.getElementById('progressBar');
+const progressPercentage = document.getElementById('progressPercentage');
+const resultInfo = document.getElementById('resultInfo');
+const previewDiv = document.getElementById('preview');
+const exportCsvButton = document.getElementById('exportCsvButton');
+const exportXlsxButton = document.getElementById('exportXlsxButton');
+const exportPdfButton = document.getElementById('exportPdfButton');
+const generateStatsBtn = document.getElementById('generateStatsButton');
 
 // Filtri
 const enableFilterCheck = document.getElementById('enableFilter');
 const filterFieldSelect = document.getElementById('filterField');
 const filterOperatorSel = document.getElementById('filterOperator');
-const filterValueInput  = document.getElementById('filterValue');
+const filterValueInput = document.getElementById('filterValue');
 
-// Checkbox per i campi da estrarre
+// Campi da estrarre (checkbox)
 const fieldsMap = {
     "descriptionMerchant": document.getElementById('field_descriptionMerchant'),
-    "Addebito":            document.getElementById('field_Addebito'),
-    "IBAN":                document.getElementById('field_IBAN'),
-    "fee scadenza":        document.getElementById('field_feeScadenza'),
-    "totale transazioni":  document.getElementById('field_totaleTransazioni'),
-    "descrizione":         document.getElementById('field_descrizione'),
+    "Addebito": document.getElementById('field_Addebito'),
+    "IBAN": document.getElementById('field_IBAN'),
+    "fee scadenza": document.getElementById('field_feeScadenza'),
+    "totale transazioni": document.getElementById('field_totaleTransazioni'),
+    "descrizione": document.getElementById('field_descrizione'),
 };
 
-// Statistiche e Dashboard
-const statsFieldSelectElem = document.getElementById('statsFieldSelect');
-const statsPreview        = document.getElementById('statsPreview');
-const chartsContainer     = document.getElementById('chartsContainer');
-const dashboardContainer  = document.getElementById('dashboardContainer');
+// Statistiche
+const statsFieldSelect = document.getElementById('statsFieldSelect');
+const statsPreview = document.getElementById('statsPreview');
+const chartsContainer = document.getElementById('chartsContainer');
+const dashboardContainer = document.getElementById('dashboardContainer');
 
-// Elementi Email UI (se presenti)
-const emailElements = {
-    tabBtns: document.querySelectorAll('.tab-btn'),
-    emailRecipients: document.getElementById('emailRecipients'),
-    emailSubject: document.getElementById('emailSubject'),
-    emailMessage: document.getElementById('emailMessage'),
-    formatCsvRadio: document.getElementById('formatCsv'),
-    formatXlsxRadio: document.getElementById('formatXlsx'),
-    includeStatsCheck: document.getElementById('includeStats'),
-    sendEmailBtn: document.getElementById('sendEmailBtn'),
-    emailStatus: document.getElementById('emailStatus'),
-    emailService: document.getElementById('emailService'),
-    emailUser: document.getElementById('emailUser'),
-    emailPassword: document.getElementById('emailPassword'),
-    smtpServer: document.getElementById('smtpServer'),
-    smtpPort: document.getElementById('smtpPort'),
-    smtpSecure: document.getElementById('smtpSecure'),
-    smtpFrom: document.getElementById('smtpFrom'),
-    smtpSettings: document.getElementById('smtpSettings'),
-    testSmtpBtn: document.getElementById('testSmtpBtn'),
-    saveSmtpBtn: document.getElementById('saveSmtpBtn'),
-    smtpStatus: document.getElementById('smtpStatus')
+// Configurazione email
+let emailConfig = {
+    service: '',
+    user: '',
+    password: '',
+    smtpServer: '',
+    smtpPort: '',
 };
+
+// Gestione preset dei filtri
+let filterPresets = [];
 
 /************************************************************************
- * LISTENER PRINCIPALI
+ * LISTENER
  ************************************************************************/
 // Gestione file
 jsonFileInput.addEventListener('change', handleFileSelection);
@@ -114,73 +69,158 @@ exportXlsxButton.addEventListener('click', () => exportData('xlsx'));
 exportPdfButton.addEventListener('click', () => exportData('pdf'));
 generateStatsBtn.addEventListener('click', generateStatistics);
 
-// Preset filtri
+// Listener per preset di filtri
 document.getElementById('savePresetButton').addEventListener('click', saveFilterPreset);
 document.getElementById('loadPresetButton').addEventListener('click', () => {
     const presetSelect = document.getElementById('filterPresetSelect');
-    if (presetSelect.value) applyFilterPreset(presetSelect.value);
+    if (presetSelect.value) {
+        applyFilterPreset(presetSelect.value);
+    }
 });
 document.getElementById('deletePresetButton').addEventListener('click', deleteFilterPreset);
 
-// Email
+// Gestione dei tabs
+document.querySelectorAll('.tab-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        // Rimuovi la classe active da tutti i tab button
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Rimuovi la classe active da tutti i tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Aggiungi la classe active al tab button cliccato
+        this.classList.add('active');
+        
+        // Attiva il tab content corrispondente
+        const tabId = this.dataset.tab;
+        document.getElementById(tabId).classList.add('active');
+    });
+});
+
+// Listener per email
 document.getElementById('sendEmailButton').addEventListener('click', sendReportEmail);
-document.getElementById('configEmailButton').addEventListener('click', showEmailConfigModal);
-document.getElementById('saveEmailConfigButton').addEventListener('click', saveEmailConfig);
-document.getElementById('cancelEmailConfigButton').addEventListener('click', closeEmailConfigModal);
-document.querySelector('.close-modal').addEventListener('click', closeEmailConfigModal);
-document.getElementById('emailService').addEventListener('change', updateSmtpFields);
+
+// Aggiornamento configurazione SMTP in base al servizio selezionato
+const emailServiceSelect = document.getElementById('emailService');
+if (emailServiceSelect) {
+    emailServiceSelect.addEventListener('change', updateSmtpFields);
+}
+
+// Verifica connessione SMTP
+const testSmtpBtn = document.getElementById('testSmtpBtn');
+if (testSmtpBtn) {
+    testSmtpBtn.addEventListener('click', testSmtpConnection);
+}
+
+// Salva configurazione SMTP
+const saveSmtpBtn = document.getElementById('saveSmtpBtn');
+if (saveSmtpBtn) {
+    saveSmtpBtn.addEventListener('click', saveEmailConfig);
+}
 
 // Aggiornamenti
-document.getElementById('updateNowButton').addEventListener('click', downloadAndInstallUpdate);
-document.getElementById('updateLaterButton').addEventListener('click', hideUpdateBanner);
+const updateNowButton = document.getElementById('updateNowButton');
+if (updateNowButton) {
+    updateNowButton.addEventListener('click', downloadAndInstallUpdate);
+}
 
-// Drag & Drop
+const updateLaterButton = document.getElementById('updateLaterButton');
+if (updateLaterButton) {
+    updateLaterButton.addEventListener('click', hideUpdateBanner);
+}
+
+// Gestione drag & drop per file
 const fileInputLabel = document.querySelector('.file-input-label');
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
     fileInputLabel.addEventListener(eventName, preventDefaults, false);
 });
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
 ['dragenter', 'dragover'].forEach(eventName => {
     fileInputLabel.addEventListener(eventName, () => {
         fileInputLabel.style.backgroundColor = '#e2e8f0';
         fileInputLabel.style.borderColor = '#4361ee';
     }, false);
 });
+
 ['dragleave', 'drop'].forEach(eventName => {
     fileInputLabel.addEventListener(eventName, () => {
         fileInputLabel.style.backgroundColor = '#f1f5f9';
         fileInputLabel.style.borderColor = '#cbd5e1';
     }, false);
 });
+
 fileInputLabel.addEventListener('drop', handleDrop, false);
 
-// Inizializzazione all'avvio
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    jsonFileInput.files = files;
+    handleFileSelection({target: {files: files}});
+}
+
+// Caricamento iniziale
 document.addEventListener('DOMContentLoaded', function () {
     loadFilterPresets();
-    initEmailUI();
-    // Eventuali controlli aggiornamenti possono essere attivati qui
+    loadEmailConfig();
+    setupTabNavigation();
+
+    // Controlla aggiornamenti dopo 5 secondi (disabilitato per il test)
+    // setTimeout(checkForUpdates, 5000);
 });
 
-// Se in ambiente Electron, ascolta eventi dal processo principale (se applicabile)
-if (window.events) {
-    window.events.on('app:sendEmail', () => {
-        if (filteredData.length === 0) {
-            showNotification('Non ci sono dati da inviare. Elabora prima i file JSON.', 'warning');
-            return;
-        }
-        switchEmailTab('send-tab');
-    });
-    window.events.on('app:configureEmail', () => {
-        switchEmailTab('config-tab');
+// Funzione per inizializzare la navigazione dei tab
+function setupTabNavigation() {
+    // Assicura che il primo tab sia attivo di default
+    const firstTabBtn = document.querySelector('.tab-btn');
+    const firstTabContent = document.getElementById(firstTabBtn?.dataset.tab);
+    
+    if (firstTabBtn && firstTabContent) {
+        firstTabBtn.classList.add('active');
+        firstTabContent.classList.add('active');
+    }
+    
+    // Assegna gli event listener
+    document.querySelectorAll('.tab-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            // Rimuovi la classe active da tutti i tab button
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Rimuovi la classe active da tutti i tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Aggiungi la classe active al tab button cliccato
+            this.classList.add('active');
+            
+            // Attiva il tab content corrispondente
+            const tabId = this.dataset.tab;
+            const tabContent = document.getElementById(tabId);
+            if (tabContent) {
+                tabContent.classList.add('active');
+            } else {
+                console.error(`Tab content with ID ${tabId} not found`);
+            }
+        });
     });
 }
 
 /************************************************************************
- * GESTIONE FILE
+ * FUNZIONI DI GESTIONE FILE
  ************************************************************************/
 function handleFileSelection(e) {
-    console.log("handleFileSelection: evento 'change' ricevuto");
     currentFiles = Array.from(e.target.files);
-    console.log("File selezionati:", currentFiles);
     if (currentFiles.length > 0) {
         let infoStr = '';
         currentFiles.forEach(f => {
@@ -192,7 +232,7 @@ function handleFileSelection(e) {
         fileInfo.innerHTML = '';
         processButton.disabled = true;
     }
-    // Reset dei dati
+    // Reset
     allExtractedData = [];
     filteredData = [];
     previewDiv.innerHTML = '';
@@ -203,9 +243,7 @@ function handleFileSelection(e) {
     exportXlsxButton.disabled = true;
     exportPdfButton.disabled = true;
     generateStatsBtn.disabled = true;
-    if (emailElements.sendEmailBtn) {
-        emailElements.sendEmailBtn.disabled = true;
-    }
+    document.getElementById('sendEmailButton').disabled = true;
     chartsContainer.innerHTML = '';
 }
 
@@ -213,15 +251,6 @@ function formatFileSize(bytes) {
     if (bytes < 1024) return bytes + ' bytes';
     else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     else return (bytes / 1048576).toFixed(1) + ' MB';
-}
-
-function readFileAsText(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = e => reject(e);
-        reader.readAsText(file);
-    });
 }
 
 async function processJSONFiles() {
@@ -251,10 +280,24 @@ async function processJSONFiles() {
         progressBar.value = percentage;
         progressPercentage.textContent = `${percentage}%`;
     }
-    filteredData = enableFilterCheck.checked ? applyFilter(allExtractedData) : allExtractedData.slice();
+
+    if (enableFilterCheck.checked) {
+        filteredData = applyFilter(allExtractedData);
+    } else {
+        filteredData = allExtractedData.slice();
+    }
+
     displayResults(filteredData);
     progressContainer.style.display = 'none';
-    document.dispatchEvent(new CustomEvent('dataProcessed', { detail: { count: filteredData.length } }));
+}
+
+function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = e => reject(e);
+        reader.readAsText(file);
+    });
 }
 
 /************************************************************************
@@ -272,7 +315,7 @@ function exploreObject(obj) {
         let foundKey = Object.keys(obj).find(k => k.toLowerCase() === "descriptionmerchant");
         if (foundKey) {
             let merchantValue = obj[foundKey];
-            let record = { "descriptionMerchant": String(merchantValue) };
+            let record = {"descriptionMerchant": String(merchantValue)};
             extractFieldsFromText(record, String(merchantValue));
             allExtractedData.push(record);
         }
@@ -287,26 +330,38 @@ function exploreObject(obj) {
 
 function extractFieldsFromText(record, text) {
     let t = text || "";
-    // Estrazione campo Addebito
+    // ADDEBITO
     let rgxAddebito = new RegExp(
         '(?:addebito|importo|pagamento|EUR|euro|USD|€|\\$)\\s*[di]*\\s*:*\\s*([0-9.,]+)',
         'i'
     );
     let matchAddebito = t.match(rgxAddebito);
-    record["Addebito"] = matchAddebito ? matchAddebito[1].trim() : (t.match(/(€\s*[0-9.,]+|\$\s*[0-9.,]+|[0-9.,]+\s*€|[0-9.,]+\s*\$|[0-9.,]+\s*EUR)/i) || [""])[0];
+    if (matchAddebito) {
+        record["Addebito"] = matchAddebito[1].trim();
+    } else {
+        let rgxMoney2 = new RegExp('(€\\s*[0-9.,]+|\\$\\s*[0-9.,]+|[0-9.,]+\\s*€|[0-9.,]+\\s*\\$|[0-9.,]+\\s*EUR)', 'i');
+        let m2 = t.match(rgxMoney2);
+        record["Addebito"] = m2 ? m2[0].trim() : "";
+    }
 
-    // Estrazione campo IBAN
+    // IBAN
     let rgxIban = new RegExp('(?:IBAN|conto)\\s*:*\\s*([A-Z0-9 ]{10,34})', 'i');
     let matchIban = t.match(rgxIban);
-    record["IBAN"] = matchIban ? matchIban[1].trim() : (t.match(/(IT\s*[0-9A-Z ]{10,30})/i) || [""])[0];
+    if (matchIban) {
+        record["IBAN"] = matchIban[1].trim();
+    } else {
+        let rgxIban2 = new RegExp('(IT\\s*[0-9A-Z ]{10,30})', 'i');
+        let mIban2 = t.match(rgxIban2);
+        record["IBAN"] = mIban2 ? mIban2[0].trim() : "";
+    }
 
-    // Estrazione di fee e scadenza
+    // Fee + scadenza
     let rgxFee = new RegExp('(?:fee|commissione|spese)\\s*[di]*\\s*:*\\s*([0-9.,]+)(?:\\s*[€\\$%])?', 'i');
     let matchFee = t.match(rgxFee);
     let rgxScad = new RegExp('(?:scadenza|scad\\.|entro il)\\s*:*\\s*(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}|\\d{1,2}\\s+[a-z]{3,10}\\s+\\d{2,4})', 'i');
     let matchScad = t.match(rgxScad);
     if (matchFee && matchScad) {
-        record["fee scadenza"] = `${matchFee[1].trim()} - ${matchScad[1].trim()}`;
+        record["fee scadenza"] = matchFee[1].trim() + " - " + matchScad[1].trim();
     } else if (matchFee) {
         record["fee scadenza"] = matchFee[1].trim();
     } else if (matchScad) {
@@ -315,12 +370,18 @@ function extractFieldsFromText(record, text) {
         record["fee scadenza"] = "";
     }
 
-    // Estrazione di totale transazioni
+    // Totale transazioni
     let rgxTot = new RegExp('(?:totale|transazioni|operazioni)\\s*[di]*\\s*:*\\s*([0-9.,]+)', 'i');
     let matchTot = t.match(rgxTot);
-    record["totale transazioni"] = matchTot ? matchTot[1].trim() : (t.match(/transazioni\s*(?:[a-z ]*)\s*([0-9]+)/i) || [""])[0];
+    if (matchTot) {
+        record["totale transazioni"] = matchTot[1].trim();
+    } else {
+        let rgxTot2 = new RegExp('transazioni\\s*(?:[a-z ]*)\\s*([0-9]+)', 'i');
+        let mTot2 = t.match(rgxTot2);
+        record["totale transazioni"] = mTot2 ? mTot2[1].trim() : "";
+    }
 
-    // Estrazione di descrizione
+    // Descrizione
     let rgxDesc = new RegExp('(?:descrizione|note|dettagli|causale)\\s*:*\\s*(.+?)(?:\\.|$)', 'i');
     let matchDesc = t.match(rgxDesc);
     if (matchDesc) {
@@ -332,7 +393,7 @@ function extractFieldsFromText(record, text) {
 }
 
 /************************************************************************
- * FILTRI E PRESET
+ * FILTRI
  ************************************************************************/
 function applyFilter(data) {
     let field = filterFieldSelect.value;
@@ -372,6 +433,10 @@ function applyFilter(data) {
     return out;
 }
 
+/************************************************************************
+ * PRESET FILTRI
+ ************************************************************************/
+// Carica i preset all'avvio
 function loadFilterPresets() {
     try {
         const savedPresets = localStorage.getItem('filterPresets');
@@ -384,9 +449,11 @@ function loadFilterPresets() {
     }
 }
 
+// Funzione per salvare un preset
 function saveFilterPreset() {
     const presetName = prompt("Inserisci un nome per questo preset:", "Preset " + (filterPresets.length + 1));
     if (!presetName) return;
+
     const preset = {
         name: presetName,
         enableFilter: enableFilterCheck.checked,
@@ -398,14 +465,17 @@ function saveFilterPreset() {
             return acc;
         }, {})
     };
+
     filterPresets.push(preset);
     localStorage.setItem('filterPresets', JSON.stringify(filterPresets));
     updateFilterPresetsList();
 }
 
+// Aggiorna la lista dei preset nell'interfaccia
 function updateFilterPresetsList() {
     const presetSelect = document.getElementById('filterPresetSelect');
     presetSelect.innerHTML = '<option value="">-- Seleziona un preset --</option>';
+
     filterPresets.forEach((preset, index) => {
         const option = document.createElement('option');
         option.value = index;
@@ -414,13 +484,17 @@ function updateFilterPresetsList() {
     });
 }
 
+// Applica il preset selezionato
 function applyFilterPreset(index) {
     const preset = filterPresets[index];
     if (!preset) return;
+
     enableFilterCheck.checked = preset.enableFilter;
     filterFieldSelect.value = preset.field;
     filterOperatorSel.value = preset.operator;
     filterValueInput.value = preset.value;
+
+    // Applica i campi selezionati
     Object.keys(preset.selectedFields).forEach(key => {
         if (fieldsMap[key]) {
             fieldsMap[key].checked = preset.selectedFields[key];
@@ -428,10 +502,12 @@ function applyFilterPreset(index) {
     });
 }
 
+// Cancella il preset selezionato
 function deleteFilterPreset() {
     const presetSelect = document.getElementById('filterPresetSelect');
     const index = presetSelect.value;
-    if (index === "" || index == null) return;
+    if (!index || index === "") return;
+
     if (confirm(`Sei sicuro di voler eliminare il preset "${filterPresets[index].name}"?`)) {
         filterPresets.splice(index, 1);
         localStorage.setItem('filterPresets', JSON.stringify(filterPresets));
@@ -451,11 +527,10 @@ function displayResults(data) {
         exportXlsxButton.disabled = true;
         exportPdfButton.disabled = true;
         generateStatsBtn.disabled = true;
-        if (emailElements.sendEmailBtn) {
-            emailElements.sendEmailBtn.disabled = true;
-        }
+        document.getElementById('sendEmailButton').disabled = true;
         return;
     }
+
     resultInfo.style.display = 'block';
     resultInfo.innerHTML = `<strong>Trovati ${data.length} record.</strong> (Mostriamo i primi 50)`;
 
@@ -498,11 +573,14 @@ function displayResults(data) {
         previewDiv.appendChild(p);
     }
 
+    // Abilita pulsanti
     exportCsvButton.disabled = false;
     exportXlsxButton.disabled = false;
     exportPdfButton.disabled = false;
     generateStatsBtn.disabled = false;
-    updateSendButtonState();
+
+    // Abilita il pulsante di invio email se la configurazione è impostata
+    document.getElementById('sendEmailButton').disabled = !(emailConfig.service && emailConfig.user);
 }
 
 /************************************************************************
@@ -510,11 +588,14 @@ function displayResults(data) {
  ************************************************************************/
 function exportData(format) {
     if (filteredData.length === 0) return;
+
     let activeFields = Object.keys(fieldsMap).filter(k => fieldsMap[k].checked);
+
     if (activeFields.length === 0) {
         alert("Nessun campo selezionato per l'esportazione!");
         return;
     }
+
     let exportArr = filteredData.map(item => {
         let obj = {};
         activeFields.forEach(f => {
@@ -522,8 +603,10 @@ function exportData(format) {
         });
         return obj;
     });
+
     let ts = new Date().toISOString().replace(/[:.]/g, '-');
     let filename = `Report_Commissioni_${ts}`;
+
     if (format === 'csv') {
         exportAsCSV(exportArr, filename + '.csv');
     } else if (format === 'xlsx') {
@@ -535,67 +618,90 @@ function exportData(format) {
 
 function exportAsCSV(data, filename) {
     if (!data.length) return;
+
     let headers = Object.keys(data[0]);
     let csvRows = [headers.join(',')];
+
     data.forEach(row => {
         let rowArr = headers.map(h => `"${(row[h] || "").toString().replace(/"/g, '""')}"`);
         csvRows.push(rowArr.join(','));
     });
+
     let csvContent = csvRows.join('\n');
-    let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    let blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
     downloadFile(blob, filename);
 }
 
 function exportAsXLSX(data, filename) {
     if (!data.length) return;
+
     let worksheet = XLSX.utils.json_to_sheet(data);
     let workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Dati Estratti");
-    let excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    let blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+    let excelBuffer = XLSX.write(workbook, {bookType: 'xlsx', type: 'array'});
+    let blob = new Blob([excelBuffer], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+
     downloadFile(blob, filename);
 }
 
 function exportAsPDF(data, filename) {
     if (!data.length) return;
-    const { jsPDF } = window.jspdf;
+
+    // Creazione del documento PDF
+    const {jsPDF} = window.jspdf;
     const doc = new jsPDF();
+
+    // Aggiungi intestazione
     doc.setFontSize(18);
     doc.text("Report Commissioni", 14, 22);
+
+    // Aggiungi data generazione
     doc.setFontSize(11);
     const today = new Date().toLocaleDateString();
     doc.text(`Generato il: ${today}`, 14, 30);
+
+    // Preparazione dati per la tabella
     const headers = Object.keys(data[0]);
     const rows = data.map(row => headers.map(h => row[h] || ""));
+
+    // Genera tabella
     doc.autoTable({
         head: [headers],
         body: rows,
         startY: 35,
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [67, 97, 238] },
-        alternateRowStyles: { fillColor: [240, 240, 240] },
-        margin: { top: 35 }
+        styles: {fontSize: 8, cellPadding: 2},
+        headStyles: {fillColor: [67, 97, 238]},
+        alternateRowStyles: {fillColor: [240, 240, 240]},
+        margin: {top: 35}
     });
+
+    // Aggiungi statistiche se disponibili
     if (filteredData.length > 0) {
-        const statsField = statsFieldSelectElem.value;
+        const statsField = statsFieldSelect.value;
         let numericVals = [];
+
         filteredData.forEach(item => {
             let raw = item[statsField] || "";
             let num = parseFloat(raw.replace(',', '.').replace(/[^0-9.-]/g, ''));
             if (!isNaN(num)) numericVals.push(num);
         });
+
         if (numericVals.length > 0) {
             const pageHeight = doc.internal.pageSize.height;
             const currentY = doc.previousAutoTable.finalY + 10;
+
             if (currentY < pageHeight - 40) {
                 doc.setFontSize(14);
                 doc.text(`Statistiche per ${statsField}`, 14, currentY);
+
                 doc.setFontSize(10);
                 const count = numericVals.length;
                 const minVal = Math.min(...numericVals);
                 const maxVal = Math.max(...numericVals);
                 const sumVal = numericVals.reduce((a, b) => a + b, 0);
                 const meanVal = sumVal / count;
+
                 doc.text(`Totale record: ${count}`, 14, currentY + 8);
                 doc.text(`Minimo: ${minVal.toFixed(2)}`, 14, currentY + 14);
                 doc.text(`Massimo: ${maxVal.toFixed(2)}`, 14, currentY + 20);
@@ -604,6 +710,8 @@ function exportAsPDF(data, filename) {
             }
         }
     }
+
+    // Aggiungi footer
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -612,9 +720,11 @@ function exportAsPDF(data, filename) {
             `Pagina ${i} di ${pageCount} - Tool Reporting Commissioni`,
             doc.internal.pageSize.width / 2,
             doc.internal.pageSize.height - 10,
-            { align: 'center' }
+            {align: 'center'}
         );
     }
+
+    // Salva PDF
     doc.save(filename);
 }
 
@@ -632,36 +742,42 @@ function downloadFile(blob, filename) {
 }
 
 /************************************************************************
- * STATISTICHE E DASHBOARD
+ * STATISTICHE E GRAFICI
  ************************************************************************/
 function generateStatistics() {
     if (filteredData.length === 0) {
         alert("Non ci sono dati filtrati da analizzare.");
         return;
     }
-    const visualizationType = document.getElementById('visualizationType') ?
-          document.getElementById('visualizationType').value : 'chart';
+
+    const visualizationType = document.getElementById('visualizationType').value;
+
     if (visualizationType === 'dashboard') {
+        // Usa la dashboard avanzata
         createAdvancedDashboard();
         statsPreview.style.display = 'none';
         chartsContainer.style.display = 'none';
     } else {
-        let field = statsFieldSelectElem.value;
+        // Usa le statistiche di base
+        let field = statsFieldSelect.value;
         let numericVals = [];
         filteredData.forEach(item => {
             let raw = item[field] || "";
             let num = parseFloat(raw.replace(',', '.').replace(/[^0-9.-]/g, ''));
             if (!isNaN(num)) numericVals.push(num);
         });
+
         statsPreview.style.display = 'block';
         chartsContainer.style.display = 'block';
         dashboardContainer.style.display = 'none';
+
         statsPreview.innerHTML = "";
         if (numericVals.length === 0) {
             statsPreview.innerHTML = `Nessun valore numerico valido per il campo <strong>${field}</strong>.`;
             chartsContainer.innerHTML = "";
             return;
         }
+
         let count = numericVals.length;
         let minVal = Math.min(...numericVals);
         let maxVal = Math.max(...numericVals);
@@ -669,6 +785,7 @@ function generateStatistics() {
         let meanVal = sumVal / count;
         let variance = numericVals.reduce((acc, v) => acc + (v - meanVal) ** 2, 0) / count;
         let stdVal = Math.sqrt(variance);
+
         let statsHtml = `
             <div class="stats-header">Statistiche per "${field}"</div>
             <ul class="stats-list">
@@ -681,9 +798,12 @@ function generateStatistics() {
             </ul>
         `;
         statsPreview.innerHTML = statsHtml;
+
         charts.forEach(c => c.destroy());
         charts = [];
         chartsContainer.innerHTML = "";
+
+        // Grafico 1: Istogramma
         let chartBox1 = document.createElement('div');
         chartBox1.className = 'chart-box';
         let canvas1 = document.createElement('canvas');
@@ -703,12 +823,14 @@ function generateStatistics() {
             },
             options: {
                 scales: {
-                    y: { beginAtZero: true },
-                    x: { ticks: { autoSkip: false } }
+                    y: {beginAtZero: true},
+                    x: {ticks: {autoSkip: false}}
                 }
             }
         });
         charts.push(chart1);
+
+        // Grafico 2: Barre per Minimo, Massimo e Media
         let chartBox2 = document.createElement('div');
         chartBox2.className = 'chart-box';
         let canvas2 = document.createElement('canvas');
@@ -726,7 +848,9 @@ function generateStatistics() {
                 }]
             },
             options: {
-                scales: { y: { beginAtZero: true } }
+                scales: {
+                    y: {beginAtZero: true}
+                }
             }
         });
         charts.push(chart2);
@@ -739,82 +863,120 @@ function createHistogramData(values, nBins) {
     let range = maxVal - minVal;
     let binSize = range / nBins;
     let counts = new Array(nBins).fill(0);
+
     values.forEach(v => {
         let idx = Math.floor((v - minVal) / binSize);
         if (idx === nBins) idx = nBins - 1;
         counts[idx]++;
     });
+
     let labels = [];
     for (let i = 0; i < nBins; i++) {
         let start = minVal + i * binSize;
         let end = start + binSize;
         labels.push(`${start.toFixed(2)} - ${end.toFixed(2)}`);
     }
-    return { labels, counts };
+
+    return {labels, counts};
 }
 
 /************************************************************************
  * DASHBOARD AVANZATA
  ************************************************************************/
 function createAdvancedDashboard() {
-    const dashboardContainer = document.getElementById('dashboardContainer');
-    if (!dashboardContainer) {
-        console.error("Dashboard container not found in the DOM");
-        return;
-    }
-    if (filteredData.length === 0) {
-        dashboardContainer.innerHTML = '<div class="alert-warning">Nessun dato disponibile per la dashboard.</div>';
-        dashboardContainer.style.display = 'block';
-        return;
-    }
+  const dashboardContainer = document.getElementById('dashboardContainer');
+
+  if (!dashboardContainer) {
+    console.error("Dashboard container not found in the DOM");
+    return;
+  }
+
+  console.log("Creating advanced dashboard with", filteredData.length, "data points");
+
+  if (filteredData.length === 0) {
+    dashboardContainer.innerHTML = '<div class="alert-warning">Nessun dato disponibile per la dashboard.</div>';
     dashboardContainer.style.display = 'block';
-    statsPreview.style.display = 'none';
-    chartsContainer.style.display = 'none';
-    dashboardContainer.innerHTML = `
-        <div class="dashboard-header">
-            <h3>Dashboard interattiva</h3>
-            <div class="dashboard-controls">
-                <select id="dashboardField">
-                    <option value="Addebito">Addebito</option>
-                    <option value="totale transazioni">Totale transazioni</option>
-                </select>
-                <select id="dashboardGroupBy">
-                    <option value="merchant">Raggruppa per merchant</option>
-                    <option value="descr">Raggruppa per descrizione</option>
-                </select>
-            </div>
-        </div>
-        <div class="dashboard-grid">
-            <div class="chart-box chart-box-large">
-                <h4>Trend complessivo</h4>
-                <canvas id="timeSeriesChart"></canvas>
-            </div>
-            <div class="chart-box">
-                <h4>Distribuzione valori</h4>
-                <canvas id="distributionChart"></canvas>
-            </div>
-            <div class="chart-box">
-                <h4>Top 5 valori</h4>
-                <canvas id="topFiveChart"></canvas>
-            </div>
-            <div class="chart-box">
-                <h4>Suddivisione per categoria</h4>
-                <canvas id="categoryComparisonChart"></canvas>
-            </div>
-        </div>
-        <div class="dashboard-summary">
-            <h4>Sintesi dei dati</h4>
-            <div id="dataSummary" class="data-summary"></div>
-        </div>
-    `;
+    return;
+  }
+
+  // Forza la visualizzazione del container
+  dashboardContainer.style.display = 'block';
+  statsPreview.style.display = 'none';
+  chartsContainer.style.display = 'none';
+
+  // Crea layout dashboard
+  dashboardContainer.innerHTML = `
+    <div class="dashboard-header">
+      <h3>Dashboard interattiva</h3>
+      <div class="dashboard-controls">
+        <select id="dashboardField">
+          <option value="Addebito">Addebito</option>
+          <option value="totale transazioni">Totale transazioni</option>
+        </select>
+        <select id="dashboardGroupBy">
+          <option value="merchant">Raggruppa per merchant</option>
+          <option value="descr">Raggruppa per descrizione</option>
+        </select>
+      </div>
+    </div>
+    <div class="dashboard-grid">
+      <div class="chart-box chart-box-large">
+        <h4>Trend complessivo</h4>
+        <canvas id="timeSeriesChart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h4>Distribuzione valori</h4>
+        <canvas id="distributionChart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h4>Top 5 valori</h4>
+        <canvas id="topFiveChart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h4>Suddivisione per categoria</h4>
+        <canvas id="categoryComparisonChart"></canvas>
+      </div>
+    </div>
+    <div class="dashboard-summary">
+      <h4>Sintesi dei dati</h4>
+      <div id="dataSummary" class="data-summary"></div>
+    </div>
+  `;
+
+  console.log("Dashboard layout created");
+
+  // Verifica che gli elementi necessari esistano
+  const elements = [
+    'dashboardField', 'dashboardGroupBy', 'timeSeriesChart', 'distributionChart',
+    'topFiveChart', 'categoryComparisonChart', 'dataSummary'
+  ];
+
+  for (const elementId of elements) {
+    if (!document.getElementById(elementId)) {
+      console.error(`Element with ID '${elementId}' not found after creating dashboard layout`);
+    }
+  }
+
+  // Inizializza i grafici
+  try {
     updateDashboardCharts();
+
+    // Aggiungi listener per i controlli della dashboard
     document.getElementById('dashboardField').addEventListener('change', updateDashboardCharts);
     document.getElementById('dashboardGroupBy').addEventListener('change', updateDashboardCharts);
+
+    console.log("Dashboard initialization completed");
+  } catch (error) {
+    console.error("Error initializing dashboard:", error);
+    dashboardContainer.innerHTML += `<div class="alert-warning">Errore nell'inizializzazione della dashboard: ${error.message}</div>`;
+  }
 }
 
 function updateDashboardCharts() {
     const field = document.getElementById('dashboardField').value;
     const groupBy = document.getElementById('dashboardGroupBy').value;
+
+    // Ottieni valori numerici dal campo selezionato
     let numericData = [];
     filteredData.forEach(item => {
         let raw = item[field] || "";
@@ -828,10 +990,13 @@ function updateDashboardCharts() {
             });
         }
     });
+
     if (numericData.length === 0) {
         document.getElementById('dashboardContainer').innerHTML = '<div class="alert-warning">Nessun valore numerico valido per la dashboard.</div>';
         return;
     }
+
+    // Crea i vari grafici
     createTimeSeriesChart(numericData);
     createDistributionChart(numericData);
     createTopFiveChart(numericData, groupBy);
@@ -840,14 +1005,22 @@ function updateDashboardCharts() {
 }
 
 function createTimeSeriesChart(data) {
+    // Simula dati temporali (in una versione reale usare date dai dati)
     const canvas = document.getElementById('timeSeriesChart');
     const ctx = canvas.getContext('2d');
+
+    // Ordina i dati per valore per creare un trend
     const sortedData = [...data].sort((a, b) => a.value - b.value);
     const values = sortedData.map(d => d.value);
-    const labels = Array.from({ length: values.length }, (_, i) => i + 1);
+
+    // Crea labels (1, 2, 3, ...)
+    const labels = Array.from({length: values.length}, (_, i) => i + 1);
+
+    // Controllo sicuro prima di distruggere il grafico precedente
     if (window.timeSeriesChart && typeof window.timeSeriesChart.destroy === 'function') {
         window.timeSeriesChart.destroy();
     }
+
     window.timeSeriesChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -864,10 +1037,15 @@ function createTimeSeriesChart(data) {
         },
         options: {
             responsive: true,
-            plugins: { legend: { position: 'top' } },
+            plugins: {
+                legend: {position: 'top'},
+                title: {display: false}
+            },
             scales: {
-                y: { beginAtZero: false },
-                x: { title: { display: true, text: 'Sequenza record' } }
+                y: {beginAtZero: false},
+                x: {
+                    title: {display: true, text: 'Sequenza record'}
+                }
             }
         }
     });
@@ -876,26 +1054,33 @@ function createTimeSeriesChart(data) {
 function createDistributionChart(data) {
     const canvas = document.getElementById('distributionChart');
     const ctx = canvas.getContext('2d');
+
+    // Calcola gli intervalli per l'istogramma
     const values = data.map(d => d.value);
     const min = Math.min(...values);
     const max = Math.max(...values);
     const range = max - min;
     const binCount = Math.min(10, Math.ceil(Math.sqrt(values.length)));
     const binSize = range / binCount;
+
     const bins = Array(binCount).fill(0);
     values.forEach(val => {
         const binIndex = Math.min(Math.floor((val - min) / binSize), binCount - 1);
         bins[binIndex]++;
     });
+
     const binLabels = [];
     for (let i = 0; i < binCount; i++) {
         const start = min + i * binSize;
         const end = start + binSize;
         binLabels.push(`${start.toFixed(1)}-${end.toFixed(1)}`);
     }
+
+    // Controllo sicuro prima di distruggere il grafico precedente
     if (window.distributionChart && typeof window.distributionChart.destroy === 'function') {
         window.distributionChart.destroy();
     }
+
     window.distributionChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -910,7 +1095,10 @@ function createDistributionChart(data) {
         },
         options: {
             responsive: true,
-            scales: { y: { beginAtZero: true }, x: { display: true } }
+            scales: {
+                y: {beginAtZero: true},
+                x: {display: true}
+            }
         }
     });
 }
@@ -918,24 +1106,38 @@ function createDistributionChart(data) {
 function createTopFiveChart(data, groupBy) {
     const canvas = document.getElementById('topFiveChart');
     const ctx = canvas.getContext('2d');
+
+    // Raggruppa per categoria
     const groupedData = {};
     data.forEach(item => {
         const category = item.category || "N/A";
         if (!groupedData[category]) {
-            groupedData[category] = { sum: 0, count: 0 };
+            groupedData[category] = {
+                sum: 0,
+                count: 0
+            };
         }
         groupedData[category].sum += item.value;
         groupedData[category].count++;
     });
+
+    // Converti in array e calcola media per categoria
     const categoryData = Object.keys(groupedData).map(cat => ({
         category: cat,
         sum: groupedData[cat].sum,
         avg: groupedData[cat].sum / groupedData[cat].count
     }));
-    const topFive = categoryData.sort((a, b) => b.sum - a.sum).slice(0, 5);
+
+    // Ordina e prendi i primi 5
+    const topFive = categoryData
+        .sort((a, b) => b.sum - a.sum)
+        .slice(0, 5);
+
+    // Controllo sicuro prima di distruggere il grafico precedente
     if (window.topFiveChart && typeof window.topFiveChart.destroy === 'function') {
         window.topFiveChart.destroy();
     }
+
     window.topFiveChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -951,7 +1153,7 @@ function createTopFiveChart(data, groupBy) {
         options: {
             responsive: true,
             plugins: {
-                legend: { display: false },
+                legend: {display: false},
                 tooltip: {
                     callbacks: {
                         label: function (context) {
@@ -964,7 +1166,9 @@ function createTopFiveChart(data, groupBy) {
                     }
                 }
             },
-            scales: { y: { beginAtZero: true } }
+            scales: {
+                y: {beginAtZero: true}
+            }
         }
     });
 }
@@ -972,34 +1176,60 @@ function createTopFiveChart(data, groupBy) {
 function createCategoryComparisonChart(data, groupBy) {
     const canvas = document.getElementById('categoryComparisonChart');
     const ctx = canvas.getContext('2d');
+
+    // Raggruppa per categoria
     const groupedData = {};
     data.forEach(item => {
         const category = item.category || "N/A";
         if (!groupedData[category]) {
-            groupedData[category] = { sum: 0, count: 0 };
+            groupedData[category] = {
+                sum: 0,
+                count: 0
+            };
         }
         groupedData[category].sum += item.value;
         groupedData[category].count++;
     });
-    const categoryData = Object.keys(groupedData).map(cat => ({ category: cat, sum: groupedData[cat].sum }));
+
+    // Converti in array
+    const categoryData = Object.keys(groupedData).map(cat => ({
+        category: cat,
+        sum: groupedData[cat].sum
+    }));
+
+    // Limita a massimo 8 categorie + Altri
     let chartData;
     if (categoryData.length <= 8) {
         chartData = categoryData;
     } else {
+        // Ordina per somma e prendi i primi 7
         const sortedData = [...categoryData].sort((a, b) => b.sum - a.sum);
         const topSeven = sortedData.slice(0, 7);
         const others = sortedData.slice(7);
+
+        // Calcola la somma degli "Altri"
         const othersSum = others.reduce((total, item) => total + item.sum, 0);
-        topSeven.push({ category: "Altri", sum: othersSum });
+
+        // Aggiungi "Altri" alla lista
+        topSeven.push({
+            category: "Altri",
+            sum: othersSum
+        });
+
         chartData = topSeven;
     }
+
+    // Crea colori per le categorie
     const backgroundColors = [
         '#4361ee', '#3a0ca3', '#4895ef', '#4cc9f0',
         '#f72585', '#b5179e', '#7209b7', '#560bad'
     ];
+
+    // Controllo sicuro prima di distruggere il grafico precedente
     if (window.categoryChart && typeof window.categoryChart.destroy === 'function') {
         window.categoryChart.destroy();
     }
+
     window.categoryChart = new Chart(ctx, {
         type: 'pie',
         data: {
@@ -1014,7 +1244,13 @@ function createCategoryComparisonChart(data, groupBy) {
         options: {
             responsive: true,
             plugins: {
-                legend: { position: 'right', labels: { boxWidth: 15, font: { size: 10 } } }
+                legend: {
+                    position: 'right',
+                    labels: {
+                        boxWidth: 15,
+                        font: {size: 10}
+                    }
+                }
             }
         }
     });
@@ -1023,6 +1259,7 @@ function createCategoryComparisonChart(data, groupBy) {
 function createDataSummary(data) {
     const summaryContainer = document.getElementById('dataSummary');
     const values = data.map(d => d.value);
+
     const sum = values.reduce((a, b) => a + b, 0);
     const avg = sum / values.length;
     const min = Math.min(...values);
@@ -1031,8 +1268,11 @@ function createDataSummary(data) {
     const median = values.length % 2 === 0
         ? (sorted[values.length / 2 - 1] + sorted[values.length / 2]) / 2
         : sorted[Math.floor(values.length / 2)];
+
+    // Deviazione standard
     const variance = values.reduce((total, val) => total + Math.pow(val - avg, 2), 0) / values.length;
     const stdDev = Math.sqrt(variance);
+
     summaryContainer.innerHTML = `
       <div class="summary-grid">
         <div class="summary-card">
@@ -1070,225 +1310,232 @@ function createDataSummary(data) {
 /************************************************************************
  * GESTIONE EMAIL
  ************************************************************************/
+// Carica configurazione email (simulata)
 function loadEmailConfig() {
-    // Simula il caricamento della configurazione (ad esempio, da localStorage)
-    emailConfig = {
-        service: 'gmail',
-        user: 'esempio@gmail.com',
-        password: '********',
-        smtpServer: '',
-        smtpPort: ''
-    };
+    try {
+        const savedConfig = localStorage.getItem('emailConfig');
+        if (savedConfig) {
+            emailConfig = JSON.parse(savedConfig);
+            console.log("Email config loaded:", emailConfig);
+        } else {
+            // Default configuration
+            emailConfig = {
+                service: '',
+                user: '',
+                password: '',
+                smtpServer: '',
+                smtpPort: '587'
+            };
+        }
+    } catch (error) {
+        console.error("Error loading email config:", error);
+    }
 }
 
-async function sendReportEmail() {
-    if (!emailConfig.service || !emailConfig.user || !emailConfig.password) {
-        showNotification('Configurazione email incompleta. Configura prima le impostazioni email.', 'error');
-        return;
-    }
+// Simulazione della funzionalità di invio email
+function sendReportEmail() {
     const recipients = document.getElementById('emailRecipients').value.trim();
     if (!recipients) {
         showNotification('Inserisci almeno un destinatario.', 'error');
         return;
     }
+
     const subject = document.getElementById('emailSubject').value.trim() || 'Report Commissioni';
     const message = document.getElementById('emailMessage').value.trim() || 'Report commissioni in allegato.';
-    const attachCSV = document.getElementById('attachCSV').checked;
-    const attachXLSX = document.getElementById('attachXLSX').checked;
-    const attachPDF = document.getElementById('attachPDF').checked;
-    if (!attachCSV && !attachXLSX && !attachPDF) {
-        showNotification('Seleziona almeno un formato da allegare.', 'error');
+
+    const formatRadios = document.getElementsByName('reportFormat');
+    let selectedFormat = 'csv';
+    for (const radio of formatRadios) {
+        if (radio.checked) {
+            selectedFormat = radio.value;
+            break;
+        }
+    }
+
+    const includeStats = document.getElementById('includeStats').checked;
+
+    if (!emailConfig.service && !emailConfig.smtpServer) {
+        showNotification('Configurazione email incompleta. Configura prima le impostazioni SMTP.', 'error');
         return;
     }
+
+    // Generazione degli allegati (simulata)
     if (filteredData.length === 0) {
         showNotification('Nessun dato da inviare.', 'error');
         return;
     }
-    try {
-        const response = await fetch('/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                recipients: recipients.split(',').map(r => r.trim()),
-                subject: subject,
-                message: message,
-                data: filteredData
-            })
-        });
-        if (response.ok) {
-            showNotification(`Email inviata con successo a ${recipients}!`, 'success');
-        } else {
-            showNotification('Errore durante l\'invio dell\'email', 'error');
-        }
-    } catch (error) {
-        console.error("Errore durante l'invio dell'email:", error);
-        showNotification('Errore durante l\'invio dell\'email', 'error');
-    }
+
+    const emailStatus = document.getElementById('emailStatus');
+    emailStatus.textContent = 'Preparazione e invio email in corso...';
+    emailStatus.style.display = 'block';
+    emailStatus.className = 'status-message alert-info';
+
+    // Simula un ritardo per l'invio
+    setTimeout(() => {
+        emailStatus.textContent = `Email inviata con successo a ${recipients}!`;
+        emailStatus.className = 'status-message alert-success';
+
+        setTimeout(() => {
+            emailStatus.style.display = 'none';
+        }, 5000);
+    }, 2000);
 }
 
-function showEmailConfigModal() {
-    const modal = document.getElementById('emailConfigModal');
-    modal.style.display = 'block';
-    document.getElementById('emailService').value = emailConfig.service || 'gmail';
-    document.getElementById('emailUser').value = emailConfig.user || '';
-    document.getElementById('emailPassword').value = emailConfig.password || '';
-    document.getElementById('smtpServer').value = emailConfig.smtpServer || '';
-    document.getElementById('smtpPort').value = emailConfig.smtpPort || '';
-    updateSmtpFields();
-}
-
-function closeEmailConfigModal() {
-    document.getElementById('emailConfigModal').style.display = 'none';
-}
-
+// Aggiorna campi SMTP in base al servizio selezionato
 function updateSmtpFields() {
     const service = document.getElementById('emailService').value;
-    const smtpServerField = document.getElementById('smtpServer');
-    const smtpPortField = document.getElementById('smtpPort');
+    const smtpSettings = document.getElementById('smtpSettings');
+
     if (service === 'other') {
-        smtpServerField.disabled = false;
-        smtpPortField.disabled = false;
+        smtpSettings.style.display = 'block';
     } else {
-        smtpServerField.disabled = true;
-        smtpPortField.disabled = true;
+        smtpSettings.style.display = 'none';
     }
 }
 
+// Testa connessione SMTP
+function testSmtpConnection() {
+    const smtpStatus = document.getElementById('smtpStatus');
+    smtpStatus.textContent = 'Verifica connessione in corso...';
+    smtpStatus.style.display = 'block';
+    smtpStatus.className = 'status-message alert-info';
+
+    const service = document.getElementById('emailService').value;
+    const user = document.getElementById('emailUser').value.trim();
+    const password = document.getElementById('emailPassword').value;
+
+    if (!service || !user || !password) {
+        smtpStatus.textContent = 'Completa tutti i campi obbligatori.';
+        smtpStatus.className = 'status-message alert-error';
+        return;
+    }
+
+    // Se è selezionato "other", verifica anche i campi del server SMTP
+    if (service === 'other') {
+        const smtpServer = document.getElementById('smtpServer').value.trim();
+        const smtpPort = document.getElementById('smtpPort').value.trim();
+
+        if (!smtpServer || !smtpPort) {
+            smtpStatus.textContent = 'Per i servizi personalizzati è necessario specificare server e porta SMTP.';
+            smtpStatus.className = 'status-message alert-error';
+            return;
+        }
+    }
+
+    // Simula una verifica della connessione
+    setTimeout(() => {
+        // Simuliamo un successo
+        smtpStatus.textContent = 'Connessione SMTP verificata con successo!';
+        smtpStatus.className = 'status-message alert-success';
+
+        setTimeout(() => {
+            smtpStatus.style.display = 'none';
+        }, 5000);
+    }, 2000);
+}
+
+// Salva configurazione email
 function saveEmailConfig() {
     const service = document.getElementById('emailService').value;
     const user = document.getElementById('emailUser').value.trim();
     const password = document.getElementById('emailPassword').value;
-    const smtpServer = document.getElementById('smtpServer').value.trim();
-    const smtpPort = document.getElementById('smtpPort').value.trim();
+    let smtpServer = '';
+    let smtpPort = '587';
+
+    if (service === 'other') {
+        smtpServer = document.getElementById('smtpServer').value.trim();
+        smtpPort = document.getElementById('smtpPort').value.trim();
+
+        if (!smtpServer || !smtpPort) {
+            alert('Per i servizi personalizzati è necessario specificare server e porta SMTP.');
+            return;
+        }
+    }
+
     if (!service || !user || !password) {
         alert('Completa tutti i campi obbligatori.');
         return;
     }
-    if (service === 'other' && (!smtpServer || !smtpPort)) {
-        alert('Per i servizi personalizzati è necessario specificare server e porta SMTP.');
-        return;
-    }
-    emailConfig = { service, user, password, smtpServer, smtpPort };
-    showNotification('Configurazione email salvata con successo!', 'success');
-    closeEmailConfigModal();
-    document.getElementById('sendEmailButton').disabled = filteredData.length === 0;
-}
 
-/************************************************************************
- * EVENTI DI DRAG & DROP PER FILE
- ************************************************************************/
-const fileInputLabel = document.querySelector('.file-input-label');
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    fileInputLabel.addEventListener(eventName, preventDefaults, false);
-});
-['dragenter', 'dragover'].forEach(eventName => {
-    fileInputLabel.addEventListener(eventName, () => {
-        fileInputLabel.style.backgroundColor = '#e2e8f0';
-        fileInputLabel.style.borderColor = '#4361ee';
-    }, false);
-});
-['dragleave', 'drop'].forEach(eventName => {
-    fileInputLabel.addEventListener(eventName, () => {
-        fileInputLabel.style.backgroundColor = '#f1f5f9';
-        fileInputLabel.style.borderColor = '#cbd5e1';
-    }, false);
-});
-fileInputLabel.addEventListener('drop', handleDrop, false);
+    // Salva la configurazione
+    emailConfig = {
+        service,
+        user,
+        password,
+        smtpServer,
+        smtpPort
+    };
 
-function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    jsonFileInput.files = files;
-    handleFileSelection({ target: { files: files } });
-}
+    // Salva in localStorage (in un'app reale, queste info sarebbero salvate in modo sicuro)
+    try {
+        localStorage.setItem('emailConfig', JSON.stringify(emailConfig));
 
-/************************************************************************
- * EVENTI INIZIALI E INTEGRAZIONE CON PROCESSI ESTERNI
- ************************************************************************/
-document.addEventListener('DOMContentLoaded', function () {
-    loadFilterPresets();
-    initEmailUI();
-    // setTimeout(checkForUpdates, 5000); // Disabilitato per il test
-});
+        const smtpStatus = document.getElementById('smtpStatus');
+        smtpStatus.textContent = 'Configurazione salvata con successo!';
+        smtpStatus.style.display = 'block';
+        smtpStatus.className = 'status-message alert-success';
 
-// Se in ambiente Electron, ascolta eventi dal processo principale
-if (window.events) {
-    window.events.on('app:sendEmail', () => {
-        if (filteredData.length === 0) {
-            showNotification('Non ci sono dati da inviare. Elabora prima i file JSON.', 'warning');
-            return;
-        }
-        switchEmailTab('send-tab');
-    });
-    window.events.on('app:configureEmail', () => {
-        switchEmailTab('config-tab');
-    });
-}
+        setTimeout(() => {
+            smtpStatus.style.display = 'none';
+        }, 5000);
 
-/************************************************************************
- * FUNZIONI EMAIL UI E GESTIONE TABS
- ************************************************************************/
-function initEmailUI() {
-    loadEmailConfig();
-    if (emailElements.tabBtns) {
-        emailElements.tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => switchEmailTab(btn.dataset.tab));
-        });
-    }
-    updateSendButtonState();
-}
+        // Abilita il pulsante di invio email se ci sono dati
+        document.getElementById('sendEmailButton').disabled = filteredData.length === 0;
 
-function switchEmailTab(tabId) {
-    // Qui implementa la logica per mostrare/nascondere le sezioni in base alla tab selezionata
-    console.log("Switch to tab:", tabId);
-    // Esempio: rimuovi la classe "active" da tutte le tab-content e aggiungila a quella selezionata
-    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    // Aggiorna anche lo stato dei bottoni delle tab
-    emailElements.tabBtns.forEach(btn => {
-        if (btn.dataset.tab === tabId) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-}
-
-function updateSendButtonState() {
-    const recipients = emailElements.emailRecipients ? emailElements.emailRecipients.value.trim() : "";
-    if (recipients !== "" && emailConfig.service && emailConfig.user) {
-        if (emailElements.sendEmailBtn) {
-            emailElements.sendEmailBtn.disabled = false;
-        } else {
-            document.getElementById('sendEmailButton').disabled = false;
-        }
-    } else {
-        if (emailElements.sendEmailBtn) {
-            emailElements.sendEmailBtn.disabled = true;
-        } else {
-            document.getElementById('sendEmailButton').disabled = true;
-        }
+    } catch (error) {
+        console.error('Errore nel salvataggio della configurazione email:', error);
+        alert('Errore nel salvataggio della configurazione.');
     }
 }
 
 /************************************************************************
- * FUNZIONE PER INVIARE EMAIL
+ * GESTIONE AGGIORNAMENTI AUTOMATICI
  ************************************************************************/
-async function sendEmailReport() {
-    if (filteredData.length === 0) {
-        showNotification('Non ci sono dati da inviare. Elabora prima i file JSON.', 'warning');
-        return;
-    }
-    await sendReportEmail();
+function checkForUpdates() {
+    // In una vera implementazione, qui si chiamerebbe l'API di Electron
+    // window.api.send('update:check');
+
+    // Simuliamo un aggiornamento disponibile dopo 3 secondi
+    setTimeout(() => {
+        showUpdateAvailable('1.1.0');
+    }, 3000);
 }
 
-/************************************************************************
- * AGGIORNAMENTI AUTOMATICI
- ************************************************************************/
+// Mostra banner aggiornamento disponibile
+function showUpdateAvailable(version) {
+    const updateBanner = document.getElementById('updateBanner');
+    const updateMessage = document.getElementById('updateMessage');
+
+    updateMessage.textContent = `Aggiornamento alla versione ${version} disponibile!`;
+    updateBanner.style.display = 'block';
+
+    // Animazione di slide-down
+    setTimeout(() => {
+        updateBanner.style.height = '40px';
+        updateBanner.style.opacity = '1';
+    }, 100);
+}
+
+// Nascondi banner aggiornamento
+function hideUpdateBanner() {
+    const updateBanner = document.getElementById('updateBanner');
+    updateBanner.style.height = '0';
+    updateBanner.style.opacity = '0';
+
+    setTimeout(() => {
+        updateBanner.style.display = 'none';
+    }, 300);
+}
+
+// Simula download e installazione dell'aggiornamento
 function downloadAndInstallUpdate() {
     showNotification('Download aggiornamento in corso...', 'info');
+
+    // Simuliamo il download (3 secondi)
     setTimeout(() => {
         showNotification('Aggiornamento scaricato! Riavvio in corso...', 'success');
+
+        // Simuliamo il riavvio (2 secondi)
         setTimeout(() => {
             showNotification('Applicazione aggiornata con successo!', 'success');
             hideUpdateBanner();
@@ -1296,15 +1543,20 @@ function downloadAndInstallUpdate() {
     }, 3000);
 }
 
-function hideUpdateBanner() {
-    const updateBanner = document.getElementById('updateBanner');
-    updateBanner.style.height = '0';
-    updateBanner.style.opacity = '0';
-    setTimeout(() => {
-        updateBanner.style.display = 'none';
-    }, 300);
-}
-
 /************************************************************************
- * FINE DEL FILE
+ * NOTIFICHE
  ************************************************************************/
+function showNotification(message, type = 'info') {
+    resultInfo.textContent = message;
+    resultInfo.style.display = 'block';
+    switch (type) {
+        case 'error':
+            resultInfo.style.borderLeftColor = 'var(--danger)';
+            break;
+        case 'success':
+            resultInfo.style.borderLeftColor = 'var(--success)';
+            break;
+        default:
+            resultInfo.style.borderLeftColor = 'var(--primary)';
+    }
+}

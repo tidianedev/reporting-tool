@@ -1,4 +1,4 @@
-// preload.js
+// Questo script viene eseguito prima di qualsiasi altro script nella finestra del renderere
 const { contextBridge, ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
@@ -130,6 +130,11 @@ contextBridge.exposeInMainWorld('reportingTool', {
     return await ipcRenderer.invoke('report:saveXlsx', { data, defaultFilename });
   },
 
+  // Salva il report in formato PDF
+  savePdfReport: async (data, defaultFilename) => {
+    return await ipcRenderer.invoke('report:savePdf', { data, defaultFilename });
+  },
+
   // Funzione per ottenere i file recenti
   getRecentFiles: async () => {
     return await ipcRenderer.invoke('app:getRecentFiles');
@@ -138,5 +143,131 @@ contextBridge.exposeInMainWorld('reportingTool', {
   // Funzione per aggiungere un file alla lista dei recenti
   addRecentFile: (filePath) => {
     ipcRenderer.send('app:addRecentFile', filePath);
+  },
+
+  // Funzioni per la gestione degli aggiornamenti
+  checkForUpdates: () => {
+    ipcRenderer.send('update:check');
+  },
+
+  downloadUpdate: () => {
+    ipcRenderer.send('update:download');
+  },
+
+  installUpdate: () => {
+    ipcRenderer.send('update:install');
+  },
+
+  // Funzioni per la gestione delle email
+  getEmailConfig: async () => {
+    return await ipcRenderer.invoke('email:getConfig');
+  },
+
+  saveEmailConfig: async (config) => {
+    return await ipcRenderer.invoke('email:saveConfig', config);
+  },
+
+  // Funzione aggiornata per testare la connessione email
+  testEmailConnection: async () => {
+    return await ipcRenderer.invoke('email:testConnection');
+  },
+
+  // Funzione aggiornata per inviare report via email con supporto per statistiche
+  sendEmailReport: async (options) => {
+    return await ipcRenderer.invoke('email:sendReport', options);
+  },
+
+  // Funzione per inviare report in forma di dati grezzi
+  sendEmailReportFromData: async (options) => {
+    return await ipcRenderer.invoke('email:sendReportFromData', options);
+  },
+
+  // Funzioni per i preset di filtri
+  getFilterPresets: async () => {
+    return await ipcRenderer.invoke('filters:getPresets');
+  },
+
+  saveFilterPreset: async (preset) => {
+    return await ipcRenderer.invoke('filters:savePreset', preset);
+  },
+
+  deleteFilterPreset: async (presetId) => {
+    return await ipcRenderer.invoke('filters:deletePreset', presetId);
+  }
+});
+
+// Registra ascoltatori di eventi da processo principale a renderer
+contextBridge.exposeInMainWorld('events', {
+  // Sottoscrizione a eventi dal processo principale
+  on: (channel, callback) => {
+    const validChannels = [
+      'update:available',
+      'update:downloaded',
+      'update:error',
+      'update:checking',
+      'update:progress',
+      'update:not-available',
+      'email:sent',
+      'email:error',
+      'email:progress',
+      'files:opened',
+      'app:exportCsv',
+      'app:exportXlsx',
+      'app:exportPdf',
+      'app:sendEmail',
+      'app:configureEmail',
+      'app:showDashboard',
+      'app:manageFilterPresets'
+    ];
+
+    if (validChannels.includes(channel)) {
+      ipcRenderer.on(channel, (event, ...args) => callback(...args));
+    }
+  },
+
+  // Rimuovi sottoscrizione a eventi
+  off: (channel, callback) => {
+    const validChannels = [
+      'update:available',
+      'update:downloaded',
+      'update:error',
+      'update:checking',
+      'update:progress',
+      'update:not-available',
+      'email:sent',
+      'email:error',
+      'email:progress',
+      'files:opened',
+      'app:exportCsv',
+      'app:exportXlsx',
+      'app:exportPdf',
+      'app:sendEmail',
+      'app:configureEmail',
+      'app:showDashboard',
+      'app:manageFilterPresets'
+    ];
+
+    if (validChannels.includes(channel)) {
+      ipcRenderer.removeListener(channel, callback);
+    }
+  },
+
+  // Helper per ricevere eventi una tantum
+  once: (channel, callback) => {
+    const validChannels = [
+      'update:available',
+      'update:downloaded',
+      'update:error',
+      'update:checking',
+      'update:progress',
+      'update:not-available',
+      'email:sent',
+      'email:error',
+      'email:progress'
+    ];
+
+    if (validChannels.includes(channel)) {
+      ipcRenderer.once(channel, (event, ...args) => callback(...args));
+    }
   }
 });

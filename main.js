@@ -5,12 +5,17 @@ const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron')
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const nodemailer = require('nodemailer'); // Per il supporto all'invio email
+const { autoUpdater } = require('electron-updater'); // Per il supporto agli aggiornamenti automatici
+const emailService = require('./emailService'); // Importa il servizio email migliorato
 
 // Gestione configurazione dell'applicazione
 const appConfig = {
   recentFiles: [],
   maxRecentFiles: 10,
   configPath: path.join(app.getPath('userData'), 'config.json'),
+  filterPresetsPath: path.join(app.getPath('userData'), 'filter-presets.json'),
+  emailConfigPath: path.join(app.getPath('userData'), 'email-config.json'),
 
   // Carica la configurazione
   load() {
@@ -52,8 +57,132 @@ const appConfig = {
     }
 
     this.save();
+  },
+
+  // Ottiene i preset dei filtri
+  getFilterPresets() {
+    try {
+      if (fs.existsSync(this.filterPresetsPath)) {
+        return JSON.parse(fs.readFileSync(this.filterPresetsPath, 'utf8'));
+      }
+      return [];
+    } catch (error) {
+      console.error('Errore nel caricamento dei preset dei filtri:', error);
+      return [];
+    }
+  },
+
+  // Salva un preset dei filtri
+  saveFilterPreset(preset) {
+    try {
+      const presets = this.getFilterPresets();
+      presets.push(preset);
+      fs.writeFileSync(this.filterPresetsPath, JSON.stringify(presets, null, 2), 'utf8');
+      return { success: true };
+    } catch (error) {
+      console.error('Errore nel salvataggio del preset:', error);
+      return { success: false, message: error.message };
+    }
+  },
+
+  // Elimina un preset dei filtri
+  deleteFilterPreset(presetId) {
+    try {
+      const presets = this.getFilterPresets();
+      if (presetId < 0 || presetId >= presets.length) {
+        return { success: false, message: 'Preset non trovato' };
+      }
+      presets.splice(presetId, 1);
+      fs.writeFileSync(this.filterPresetsPath, JSON.stringify(presets, null, 2), 'utf8');
+      return { success: true };
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del preset:', error);
+      return { success: false, message: error.message };
+    }
+  },
+
+  // Ottiene la configurazione dell'email
+  getEmailConfig() {
+    try {
+      if (fs.existsSync(this.emailConfigPath)) {
+        return JSON.parse(fs.readFileSync(this.emailConfigPath, 'utf8'));
+      }
+      return {
+        service: '',
+        user: '',
+        password: '',
+        smtpServer: '',
+        smtpPort: ''
+      };
+    } catch (error) {
+      console.error('Errore nel caricamento della configurazione email:', error);
+      return {
+        service: '',
+        user: '',
+        password: '',
+        smtpServer: '',
+        smtpPort: ''
+      };
+    }
+  },
+
+  // Salva la configurazione dell'email
+  saveEmailConfig(config) {
+    try {
+      fs.writeFileSync(this.emailConfigPath, JSON.stringify(config, null, 2), 'utf8');
+      return { success: true };
+    } catch (error) {
+      console.error('Errore nel salvataggio della configurazione email:', error);
+      return { success: false, message: error.message };
+    }
   }
 };
+
+// Configurazione dell'updater
+function setupAutoUpdater() {
+  // Imposta l'URL del server di aggiornamento
+  // autoUpdater.setFeedURL('https://tuodominio.com/updates/');
+
+  // Eventi dell'auto-updater
+  autoUpdater.on('checking-for-update', () => {
+    if (mainWindow) mainWindow.webContents.send('update:checking');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    if (mainWindow) mainWindow.webContents.send('update:available', info);
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    if (mainWindow) mainWindow.webContents.send('update:not-available', info);
+  });
+
+  autoUpdater.on('error', (err) => {
+    if (mainWindow) mainWindow.webContents.send('update:error', err);
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    if (mainWindow) mainWindow.webContents.send('update:progress', progressObj);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    if (mainWindow) {
+      mainWindow.webContents.send('update:downloaded', info);
+
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Aggiornamento disponibile',
+        message: `È disponibile l'aggiornamento alla versione ${info.version}`,
+        detail: 'L\'aggiornamento è stato scaricato e verrà installato al riavvio dell\'applicazione.',
+        buttons: ['Riavvia ora', 'Più tardi'],
+        defaultId: 0
+      }).then(result => {
+        if (result.response === 0) {
+          autoUpdater.quitAndInstall();
+        }
+      });
+    }
+  });
+}
 
 // Carica la configurazione all'avvio
 appConfig.load();
@@ -151,6 +280,20 @@ function createAppMenu() {
             mainWindow.webContents.send('app:exportXlsx');
           }
         },
+        {
+          label: 'Esporta come PDF',
+          accelerator: 'CmdOrCtrl+P',
+          click: () => {
+            mainWindow.webContents.send('app:exportPdf');
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Invia report via email...',
+          click: () => {
+            mainWindow.webContents.send('app:sendEmail');
+          }
+        },
         { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' }
       ]
@@ -193,6 +336,31 @@ function createAppMenu() {
       ]
     },
 
+    // Menu Strumenti
+    {
+      label: 'Strumenti',
+      submenu: [
+        {
+          label: 'Dashboard avanzata',
+          click: () => {
+            mainWindow.webContents.send('app:showDashboard');
+          }
+        },
+        {
+          label: 'Gestione preset filtri',
+          click: () => {
+            mainWindow.webContents.send('app:manageFilterPresets');
+          }
+        },
+        {
+          label: 'Configurazione email',
+          click: () => {
+            mainWindow.webContents.send('app:configureEmail');
+          }
+        }
+      ]
+    },
+
     // Menu Aiuto
     {
       role: 'help',
@@ -200,7 +368,13 @@ function createAppMenu() {
         {
           label: 'Guida utente',
           click: async () => {
-            await shell.openExternal('https://tuodominio.com/guida');
+            await shell.openExternal('https://github.com/SERGE3-g/reporting-tool/releases/tag/v1.1.0');
+          }
+        },
+        {
+          label: 'Controlla aggiornamenti',
+          click: () => {
+            autoUpdater.checkForUpdates();
           }
         },
         {
@@ -267,6 +441,12 @@ function updateRecentFilesMenu(template) {
 // Quando l'app è pronta
 app.whenReady().then(() => {
   createWindow();
+  setupAutoUpdater();
+
+  // Controllo aggiornamenti all'avvio (dopo un breve ritardo)
+  setTimeout(() => {
+    autoUpdater.checkForUpdates();
+  }, 3000);
 
   app.on('activate', function () {
     // Su macOS è comune ricreare una finestra quando
@@ -294,6 +474,7 @@ function setupIpcHandlers() {
       filters: fileTypes || [
         { name: 'CSV', extensions: ['csv'] },
         { name: 'Excel', extensions: ['xlsx'] },
+        { name: 'PDF', extensions: ['pdf'] },
         { name: 'Tutti i file', extensions: ['*'] }
       ],
       properties: ['createDirectory', 'showOverwriteConfirmation']
@@ -403,4 +584,124 @@ function setupIpcHandlers() {
       return { success: false, message: error.message };
     }
   });
+
+  // Gestione del salvataggio PDF
+  ipcMain.handle('report:savePdf', async (event, { data, defaultFilename }) => {
+    try {
+      const result = await dialog.showSaveDialog({
+        defaultPath: defaultFilename || 'Report_Commissioni.pdf',
+        filters: [
+          { name: 'PDF', extensions: ['pdf'] }
+        ],
+        properties: ['createDirectory', 'showOverwriteConfirmation']
+      });
+
+      if (result.canceled) return { success: false, message: 'Operazione annullata.' };
+
+      // Qui il data dovrebbe essere un buffer
+      fs.writeFileSync(result.filePath, data);
+      return { success: true, filePath: result.filePath };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  });
+
+  // Gestione dei preset dei filtri
+  ipcMain.handle('filters:getPresets', () => {
+    return appConfig.getFilterPresets();
+  });
+
+  ipcMain.handle('filters:savePreset', (event, preset) => {
+    return appConfig.saveFilterPreset(preset);
+  });
+
+  ipcMain.handle('filters:deletePreset', (event, presetId) => {
+    return appConfig.deleteFilterPreset(presetId);
+  });
+
+  // Gestione della configurazione email (versione migliorata)
+  ipcMain.handle('email:getConfig', () => {
+    return emailService.loadConfig();
+  });
+
+  ipcMain.handle('email:saveConfig', (event, config) => {
+    return emailService.saveConfig(config);
+  });
+
+  ipcMain.handle('email:testConnection', async () => {
+    return await emailService.verifyConnection();
+  });
+
+  ipcMain.handle('email:sendReport', async (event, options) => {
+    return await emailService.sendReport(options);
+  });
+
+  // Fallback per mantenere retrocompatibilità con il vecchio sistema
+  ipcMain.handle('email:sendReportLegacy', (event, options) => {
+    return sendReportEmail(options);
+  });
+
+  // Gestione degli aggiornamenti
+  ipcMain.on('update:check', () => {
+    autoUpdater.checkForUpdates();
+  });
+
+  ipcMain.on('update:download', () => {
+    autoUpdater.downloadUpdate();
+  });
+
+  ipcMain.on('update:install', () => {
+    autoUpdater.quitAndInstall();
+  });
+}
+
+// Metodo legacy per l'invio di email (per retrocompatibilità)
+async function sendReportEmail(options) {
+  try {
+    const emailConfig = appConfig.getEmailConfig();
+
+    if (!emailConfig.service || !emailConfig.user || !emailConfig.password) {
+      return { success: false, message: 'Configurazione email mancante o incompleta.' };
+    }
+
+    let transportConfig;
+    if (emailConfig.service === 'other') {
+      if (!emailConfig.smtpServer || !emailConfig.smtpPort) {
+        return { success: false, message: 'Configurazione SMTP mancante.' };
+      }
+
+      transportConfig = {
+        host: emailConfig.smtpServer,
+        port: parseInt(emailConfig.smtpPort),
+        secure: parseInt(emailConfig.smtpPort) === 465,
+        auth: {
+          user: emailConfig.user,
+          pass: emailConfig.password
+        }
+      };
+    } else {
+      transportConfig = {
+        service: emailConfig.service,
+        auth: {
+          user: emailConfig.user,
+          pass: emailConfig.password
+        }
+      };
+    }
+
+    const transporter = nodemailer.createTransport(transportConfig);
+
+    const info = await transporter.sendMail({
+      from: emailConfig.user,
+      to: options.recipients.join(','),
+      subject: options.subject,
+      html: options.body,
+      attachments: options.attachments
+    });
+
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Errore nell\'invio dell\'email:', error);
+    return { success: false, message: error.message };
+  }
 }
